@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced PasteLink Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-500 tracking-tight"><i class="fas fa-link mr-2"></i>PASTEPRO</h1>
+            <div class="space-x-4">
+                <button onclick="showTab('create')" class="hover:text-blue-400 transition">Create</button>
+                <button onclick="showTab('history')" class="hover:text-blue-400 transition">My History</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto p-4">
+        
+        <!-- Tab: Create/Edit Paste -->
+        <section id="tab-create" class="mt-6">
+            <div class="bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700">
+                <input type="text" id="title" placeholder="Paste Title (Optional)" class="w-full bg-slate-700 p-3 rounded-lg mb-4 border border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none text-lg">
+                
+                <textarea id="content" rows="12" class="w-full bg-slate-700 p-4 rounded-lg mb-4 border border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm" placeholder="Paste your text or code here..."></textarea>
+                
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase font-bold">Privacy</label>
+                        <select id="privacy" class="w-full bg-slate-700 p-3 rounded-lg border border-slate-600 mt-1">
+                            <option value="public">Public (Everyone)</option>
+                            <option value="private">Private (Password Protected)</option>
+                        </select>
+                    </div>
+                    <div id="password-box" class="hidden">
+                        <label class="text-xs text-slate-400 uppercase font-bold">Set Password</label>
+                        <input type="password" id="password" class="w-full bg-slate-700 p-3 rounded-lg border border-slate-600 mt-1" placeholder="Enter password">
+                    </div>
+                    <div class="flex items-end">
+                        <input type="hidden" id="editing-id" value="">
+                        <button id="publish-btn" onclick="publishPaste()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition transform active:scale-95 shadow-lg">
+                            <i class="fas fa-paper-plane mr-2"></i> Publish Paste
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: History -->
+        <section id="tab-history" class="mt-6 hidden">
+            <h2 class="text-xl font-bold mb-4 text-slate-300">Your Recent Pastes</h2>
+            <div id="history-list" class="grid gap-4">
+                <!-- History items will appear here -->
+                <p class="text-slate-500 italic">No history found on this device.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Success Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[100]">
+        <div class="bg-slate-800 p-8 rounded-2xl max-w-md w-full border border-blue-500 shadow-2xl text-center">
+            <div class="text-5xl text-green-500 mb-4"><i class="fas fa-check-circle"></i></div>
+            <h3 class="text-2xl font-bold mb-2">Successfully Created!</h3>
+            <p class="text-slate-400 mb-6">Your paste is now live. Share it using the link below.</p>
+            <input type="text" id="share-url" readonly class="w-full bg-black p-3 rounded border border-slate-600 mb-4 text-center font-mono text-blue-400">
+            <button onclick="copyLink()" class="bg-blue-600 px-6 py-2 rounded-full font-bold mr-2 hover:bg-blue-700">Copy Link</button>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-white mt-4 block mx-auto">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Tabs
+        function showTab(tab) {
+            document.getElementById('tab-create').classList.toggle('hidden', tab !== 'create');
+            document.getElementById('tab-history').classList.toggle('hidden', tab !== 'history');
+            if(tab === 'history') loadHistory();
+        }
+
+        // Privacy Password Toggle
+        document.getElementById('privacy').addEventListener('change', (e) => {
+            document.getElementById('password-box').classList.toggle('hidden', e.target.value === 'public');
+        });
+
+        // Publish & History Logic
+        async function publishPaste() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const privacy = document.getElementById('privacy').value;
+            const password = document.getElementById('password').value;
+            const editId = document.getElementById('editing-id').value;
+            const btn = document.getElementById('publish-btn');
+
+            if(!content) return alert("Content is required!");
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            const endpoint = editId ? '/api/update' : '/api/create';
+            const payload = { title, content, privacy, password, id: editId };
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            
+            if(data.success) {
+                // Save to local history
+                if(!editId) {
+                    let history = JSON.parse(localStorage.getItem('my_pastes') || '[]');
+                    history.unshift({ id: data.id, title: title || 'Untitled', date: new Date().toLocaleDateString(), editKey: data.editKey });
+                    localStorage.setItem('my_pastes', JSON.stringify(history));
+                }
+                
+                if(!editId) showModal(data.id);
+                else { alert("Updated successfully!"); location.reload(); }
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Publish Paste';
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('my_pastes') || '[]');
+            const container = document.getElementById('history-list');
+            if(history.length === 0) return;
+
+            container.innerHTML = history.map(item => `
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-blue-400">${item.title}</h4>
+                        <p class="text-xs text-slate-500">${item.date} | ID: ${item.id}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <a href="/${item.id}" target="_blank" class="text-slate-400 hover:text-white"><i class="fas fa-external-link-alt"></i></a>
+                        <button onclick="editPaste('${item.id}', '${item.editKey}')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-edit"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function editPaste(id, editKey) {
+            const res = await fetch(`/api/get_raw?id=${id}&editKey=${editKey}`);
+            const data = await res.json();
+            if(data.content) {
+                document.getElementById('title').value = data.title;
+                document.getElementById('content').value = data.content;
+                document.getElementById('editing-id').value = id;
+                document.getElementById('publish-btn').innerText = "Update Paste";
+                showTab('create');
+            }
+        }
+
+        function showModal(id) {
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('share-url').value = window.location.origin + '/' + id;
+        }
+
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); location.reload(); }
+
+        function copyLink() {
+            const copyText = document.getElementById('share-url');
+            copyText.select();
+            document.execCommand("copy");
+            alert("Link copied!");
+        }
+    </script>
+</body>
+</html>
