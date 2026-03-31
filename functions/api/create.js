@@ -16,7 +16,7 @@ export async function onRequestPost(context) {
 
     await env.PASTES.put(id, JSON.stringify(pasteData));
 
-    return new Response(JSON.stringify({ success: true, id, editKey }), {
+    return new Response(JSON.stringify({ success: true, id, c22e75e9285a458ca1b8e17f60620e3a }), {
         headers: { 'Content-Type': 'application/json' }
     });
 }
