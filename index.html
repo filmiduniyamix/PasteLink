@@ -1,176 +1,297 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced PasteLink Clone</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PasteBin Clone</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { font-size: 2.5rem; background: linear-gradient(135deg, #38bdf8, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .card {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    textarea, input, select, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border-radius: 0.5rem;
+      border: none;
+      background: #1e293b;
+      color: white;
+      font-size: 1rem;
+    }
+    textarea { min-height: 200px; font-family: monospace; }
+    button {
+      background: #3b82f6;
+      cursor: pointer;
+      transition: 0.3s;
+      font-weight: bold;
+    }
+    button:hover { background: #2563eb; }
+    .nav-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    .nav-links button {
+      width: auto;
+      padding: 0.5rem 1.5rem;
+      background: #334155;
+    }
+    .paste-item {
+      background: #0f172a;
+      margin: 0.5rem 0;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .paste-item:hover { background: #1e293b; }
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #334155;
+    }
+    .social-links a {
+      color: #94a3b8;
+      margin: 0 0.5rem;
+      text-decoration: none;
+    }
+    .social-links a:hover { color: white; }
+    .copy-btn {
+      background: #10b981;
+      width: auto;
+      display: inline-block;
+      margin-right: 1rem;
+    }
+    .flex { display: flex; gap: 1rem; align-items: center; }
+    .error { color: #f87171; }
+    .success { color: #4ade80; }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
+<body>
+<div class="container">
+  <header>
+    <h1>📝 PasteBin Clone</h1>
+    <p>Text share karo – public, unlisted, ya private</p>
+  </header>
 
-    <!-- Navigation -->
-    <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-blue-500 tracking-tight"><i class="fas fa-link mr-2"></i>PASTEPRO</h1>
-            <div class="space-x-4">
-                <button onclick="showTab('create')" class="hover:text-blue-400 transition">Create</button>
-                <button onclick="showTab('history')" class="hover:text-blue-400 transition">My History</button>
-            </div>
-        </div>
-    </nav>
+  <div class="nav-links">
+    <button id="createBtn">✍️ नया Paste</button>
+    <button id="listBtn">📋 सार्वजनिक Pastes</button>
+  </div>
 
-    <div class="max-w-5xl mx-auto p-4">
-        
-        <!-- Tab: Create/Edit Paste -->
-        <section id="tab-create" class="mt-6">
-            <div class="bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700">
-                <input type="text" id="title" placeholder="Paste Title (Optional)" class="w-full bg-slate-700 p-3 rounded-lg mb-4 border border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none text-lg">
-                
-                <textarea id="content" rows="12" class="w-full bg-slate-700 p-4 rounded-lg mb-4 border border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm" placeholder="Paste your text or code here..."></textarea>
-                
-                <div class="grid md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="text-xs text-slate-400 uppercase font-bold">Privacy</label>
-                        <select id="privacy" class="w-full bg-slate-700 p-3 rounded-lg border border-slate-600 mt-1">
-                            <option value="public">Public (Everyone)</option>
-                            <option value="private">Private (Password Protected)</option>
-                        </select>
-                    </div>
-                    <div id="password-box" class="hidden">
-                        <label class="text-xs text-slate-400 uppercase font-bold">Set Password</label>
-                        <input type="password" id="password" class="w-full bg-slate-700 p-3 rounded-lg border border-slate-600 mt-1" placeholder="Enter password">
-                    </div>
-                    <div class="flex items-end">
-                        <input type="hidden" id="editing-id" value="">
-                        <button id="publish-btn" onclick="publishPaste()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition transform active:scale-95 shadow-lg">
-                            <i class="fas fa-paper-plane mr-2"></i> Publish Paste
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Create View -->
+  <div id="createView" class="card">
+    <h2>नया Paste बनाएँ</h2>
+    <input type="text" id="pasteTitle" placeholder="शीर्षक (वैकल्पिक)">
+    <textarea id="pasteContent" placeholder="अपना टेक्स्ट यहाँ लिखें..."></textarea>
+    <select id="pastePrivacy">
+      <option value="public">🌍 सार्वजनिक (Public)</option>
+      <option value="unlisted">🔗 अप्रकाशित (Unlisted)</option>
+      <option value="private">🔒 निजी (Private – edit code चाहिए)</option>
+    </select>
+    <input type="text" id="editCode" placeholder="Edit code (20+ chars या रिक्त छोड़ें, auto generate होगा)">
+    <button id="submitCreate">Publish करें</button>
+    <div id="createResult"></div>
+  </div>
 
-        <!-- Tab: History -->
-        <section id="tab-history" class="mt-6 hidden">
-            <h2 class="text-xl font-bold mb-4 text-slate-300">Your Recent Pastes</h2>
-            <div id="history-list" class="grid gap-4">
-                <!-- History items will appear here -->
-                <p class="text-slate-500 italic">No history found on this device.</p>
-            </div>
-        </section>
+  <!-- List View -->
+  <div id="listView" class="card" style="display:none;">
+    <h2>सार्वजनिक Pastes</h2>
+    <div id="pasteList"></div>
+  </div>
 
+  <!-- View/Edit View -->
+  <div id="viewView" class="card" style="display:none;">
+    <h2 id="viewTitle"></h2>
+    <div id="viewContent" style="white-space: pre-wrap; background:#0f172a; padding:1rem; border-radius:0.5rem; margin:1rem 0;"></div>
+    <div class="flex">
+      <button id="copyBtn" class="copy-btn">📋 कॉपी करें</button>
+      <button id="editThisBtn">✏️ Edit</button>
+      <button id="historyBtn">📜 History</button>
     </div>
-
-    <!-- Success Modal -->
-    <div id="modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[100]">
-        <div class="bg-slate-800 p-8 rounded-2xl max-w-md w-full border border-blue-500 shadow-2xl text-center">
-            <div class="text-5xl text-green-500 mb-4"><i class="fas fa-check-circle"></i></div>
-            <h3 class="text-2xl font-bold mb-2">Successfully Created!</h3>
-            <p class="text-slate-400 mb-6">Your paste is now live. Share it using the link below.</p>
-            <input type="text" id="share-url" readonly class="w-full bg-black p-3 rounded border border-slate-600 mb-4 text-center font-mono text-blue-400">
-            <button onclick="copyLink()" class="bg-blue-600 px-6 py-2 rounded-full font-bold mr-2 hover:bg-blue-700">Copy Link</button>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-white mt-4 block mx-auto">Close</button>
-        </div>
+    <div id="editSection" style="display:none;">
+      <textarea id="editContent"></textarea>
+      <input type="text" id="editCodeInput" placeholder="Edit code">
+      <button id="saveEdit">Save Changes</button>
     </div>
+    <div id="historySection" style="display:none;">
+      <h3>Version History</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
 
-    <script>
-        // Toggle Tabs
-        function showTab(tab) {
-            document.getElementById('tab-create').classList.toggle('hidden', tab !== 'create');
-            document.getElementById('tab-history').classList.toggle('hidden', tab !== 'history');
-            if(tab === 'history') loadHistory();
-        }
+  <footer>
+    <div class="social-links">
+      <a href="https://twitter.com/yourhandle" target="_blank">Twitter</a> |
+      <a href="https://github.com/yourhandle" target="_blank">GitHub</a> |
+      <a href="https://instagram.com/yourhandle" target="_blank">Instagram</a>
+    </div>
+    <p>© 2025 YourSite – Edit code से सुरक्षित</p>
+  </footer>
+</div>
 
-        // Privacy Password Toggle
-        document.getElementById('privacy').addEventListener('change', (e) => {
-            document.getElementById('password-box').classList.toggle('hidden', e.target.value === 'public');
-        });
+<script>
+  const API_BASE = 'https://your-worker.workers.dev'; // अपना Worker URL डालें
+  let currentPasteId = null;
+  let currentEditCode = null;
 
-        // Publish & History Logic
-        async function publishPaste() {
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const privacy = document.getElementById('privacy').value;
-            const password = document.getElementById('password').value;
-            const editId = document.getElementById('editing-id').value;
-            const btn = document.getElementById('publish-btn');
+  // Helper
+  async function apiCall(endpoint, options = {}) {
+    const res = await fetch(API_BASE + endpoint, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
 
-            if(!content) return alert("Content is required!");
+  // Views
+  function showCreate() {
+    document.getElementById('createView').style.display = 'block';
+    document.getElementById('listView').style.display = 'none';
+    document.getElementById('viewView').style.display = 'none';
+  }
+  function showList() { loadPublicList(); }
+  async function loadPublicList() {
+    document.getElementById('createView').style.display = 'none';
+    document.getElementById('listView').style.display = 'block';
+    document.getElementById('viewView').style.display = 'none';
+    try {
+      const data = await apiCall('/api/pastes');
+      const container = document.getElementById('pasteList');
+      container.innerHTML = '';
+      if (data.pastes.length === 0) container.innerHTML = '<p>कोई सार्वजनिक paste नहीं।</p>';
+      data.pastes.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'paste-item';
+        div.innerHTML = `<strong>${p.title || 'Untitled'}</strong><br><small>${new Date(p.created_at).toLocaleString()}</small>`;
+        div.onclick = () => loadPaste(p.id);
+        container.appendChild(div);
+      });
+    } catch(e) { alert('Error loading list: ' + e.message); }
+  }
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  async function loadPaste(id, editCode = null) {
+    try {
+      let url = `/api/pastes/${id}`;
+      if (editCode) url += `?editCode=${encodeURIComponent(editCode)}`;
+      const data = await apiCall(url);
+      currentPasteId = id;
+      currentEditCode = editCode;
+      document.getElementById('viewTitle').innerText = data.title || 'Untitled';
+      document.getElementById('viewContent').innerText = data.content;
+      document.getElementById('editContent').value = data.content;
+      document.getElementById('editCodeInput').value = editCode || '';
+      document.getElementById('editSection').style.display = 'none';
+      document.getElementById('historySection').style.display = 'none';
+      document.getElementById('createView').style.display = 'none';
+      document.getElementById('listView').style.display = 'none';
+      document.getElementById('viewView').style.display = 'block';
+    } catch(e) { alert('Error loading paste: ' + e.message); }
+  }
 
-            const endpoint = editId ? '/api/update' : '/api/create';
-            const payload = { title, content, privacy, password, id: editId };
+  // Create submit
+  document.getElementById('submitCreate').onclick = async () => {
+    const content = document.getElementById('pasteContent').value;
+    const privacy = document.getElementById('pastePrivacy').value;
+    let editCode = document.getElementById('editCode').value;
+    const title = document.getElementById('pasteTitle').value;
+    if (!content) return alert('Content required');
+    if (!editCode) editCode = Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+    try {
+      const data = await apiCall('/api/pastes', {
+        method: 'POST',
+        body: JSON.stringify({ content, privacy, editCode, title })
+      });
+      document.getElementById('createResult').innerHTML = `<span class="success">✅ Created! ID: ${data.id}</span><br>Edit code: ${data.editCode}`;
+      // Optionally redirect to view
+      loadPaste(data.id, data.editCode);
+    } catch(e) { alert(e.message); }
+  };
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+  // Edit
+  document.getElementById('editThisBtn').onclick = () => {
+    if (!currentEditCode) return alert('Edit code required. Enter it below.');
+    document.getElementById('editSection').style.display = 'block';
+  };
+  document.getElementById('saveEdit').onclick = async () => {
+    const newContent = document.getElementById('editContent').value;
+    const providedCode = document.getElementById('editCodeInput').value;
+    if (!providedCode) return alert('Edit code required');
+    try {
+      await apiCall(`/api/pastes/${currentPasteId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ content: newContent, editCode: providedCode })
+      });
+      alert('Saved! Reloading...');
+      loadPaste(currentPasteId, providedCode);
+    } catch(e) { alert('Error: ' + e.message); }
+  };
 
-            const data = await res.json();
-            
-            if(data.success) {
-                // Save to local history
-                if(!editId) {
-                    let history = JSON.parse(localStorage.getItem('my_pastes') || '[]');
-                    history.unshift({ id: data.id, title: title || 'Untitled', date: new Date().toLocaleDateString(), editKey: data.editKey });
-                    localStorage.setItem('my_pastes', JSON.stringify(history));
-                }
-                
-                if(!editId) showModal(data.id);
-                else { alert("Updated successfully!"); location.reload(); }
-            }
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Publish Paste';
-        }
+  // History
+  document.getElementById('historyBtn').onclick = async () => {
+    if (!currentPasteId) return;
+    try {
+      let url = `/api/pastes/${currentPasteId}?view=history`;
+      if (currentEditCode) url += `&editCode=${encodeURIComponent(currentEditCode)}`;
+      const data = await apiCall(url);
+      const container = document.getElementById('historyList');
+      container.innerHTML = '';
+      if (data.history.length === 0) container.innerHTML = '<p>No history</p>';
+      data.history.forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'paste-item';
+        div.innerHTML = `<strong>Version ${h.version}</strong> – ${new Date(h.createdAt).toLocaleString()}<br>
+                         <button onclick="restoreVersion(${h.version})">Restore this version</button>
+                         <details><summary>Preview</summary><pre>${h.content.substring(0, 200)}</pre></details>`;
+        container.appendChild(div);
+      });
+      document.getElementById('historySection').style.display = 'block';
+    } catch(e) { alert('Error loading history: ' + e.message); }
+  };
 
-        function loadHistory() {
-            const history = JSON.parse(localStorage.getItem('my_pastes') || '[]');
-            const container = document.getElementById('history-list');
-            if(history.length === 0) return;
+  window.restoreVersion = async (version) => {
+    if (!confirm(`Restore to version ${version}?`)) return;
+    // Find content from history list (simple: we can fetch again)
+    const data = await apiCall(`/api/pastes/${currentPasteId}?view=history&editCode=${currentEditCode}`);
+    const ver = data.history.find(h => h.version === version);
+    if (ver) {
+      await apiCall(`/api/pastes/${currentPasteId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ content: ver.content, editCode: currentEditCode })
+      });
+      alert('Restored!');
+      loadPaste(currentPasteId, currentEditCode);
+    }
+  };
 
-            container.innerHTML = history.map(item => `
-                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-blue-400">${item.title}</h4>
-                        <p class="text-xs text-slate-500">${item.date} | ID: ${item.id}</p>
-                    </div>
-                    <div class="space-x-2">
-                        <a href="/${item.id}" target="_blank" class="text-slate-400 hover:text-white"><i class="fas fa-external-link-alt"></i></a>
-                        <button onclick="editPaste('${item.id}', '${item.editKey}')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-edit"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        }
+  document.getElementById('copyBtn').onclick = () => {
+    const content = document.getElementById('viewContent').innerText;
+    navigator.clipboard.writeText(content);
+    alert('Copied!');
+  };
 
-        async function editPaste(id, editKey) {
-            const res = await fetch(`/api/get_raw?id=${id}&editKey=${editKey}`);
-            const data = await res.json();
-            if(data.content) {
-                document.getElementById('title').value = data.title;
-                document.getElementById('content').value = data.content;
-                document.getElementById('editing-id').value = id;
-                document.getElementById('publish-btn').innerText = "Update Paste";
-                showTab('create');
-            }
-        }
-
-        function showModal(id) {
-            document.getElementById('modal').classList.remove('hidden');
-            document.getElementById('share-url').value = window.location.origin + '/' + id;
-        }
-
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); location.reload(); }
-
-        function copyLink() {
-            const copyText = document.getElementById('share-url');
-            copyText.select();
-            document.execCommand("copy");
-            alert("Link copied!");
-        }
-    </script>
+  document.getElementById('createBtn').onclick = showCreate;
+  document.getElementById('listBtn').onclick = showList;
+  showCreate();
+</script>
 </body>
 </html>
